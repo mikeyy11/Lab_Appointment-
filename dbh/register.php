@@ -1,52 +1,46 @@
 <?php
+// Start the session
 session_start();
+include('dbdata.php');
 
-class UserRegistration
-{
-    private $conn;
+if (isset($_POST['submit'])) { // Make sure this matches your form's submit button name attribute (it's case-sensitive and should be 'submit', not 'sumbit').
 
-    public function __construct($db)
-    {
-        $this->conn = $db;
-    }
+    // Fetching user inputs
+    $name = $conn->real_escape_string($_POST['name']);
+    $email = $conn->real_escape_string($_POST['email']);
+    $phone = $conn->real_escape_string($_POST['phone']);
+    // Encrypting the password
+    $hashedPassword = password_hash($conn->real_escape_string($_POST['password']), PASSWORD_DEFAULT);
 
-    public function registerUser($name, $email, $phone, $password)
-    {
-        $name = $this->conn->real_escape_string($name);
-        $email = $this->conn->real_escape_string($email);
-        $phone = $this->conn->real_escape_string($phone);
-        $hashedPassword = $this->conn->real_escape_string(sha1($password));
+    // Ensure no fields are empty
+    if ($name != "" && $email != "" && $phone != "" && $_POST['password'] != "") {
 
-        if (!empty($name) && !empty($email) && !empty($phone) && !empty($password)) {
-            $sql1 = "SELECT `email` FROM `tb_user` WHERE `email`='$email'";
-            $results1 = $this->conn->query($sql1);
-
-            if ($results1->num_rows > 0) {
-                $_SESSION['error'] = "Email already taken";
-                header("Location: ../signup.php");
-            } else {
-                $sql2 = "INSERT INTO tb_user (name, email, phone, password, status, user_type) VALUES ('$name', '$email', '$phone', '$hashedPassword', 'active', 'user')";
-                $results2 = $this->conn->query($sql2);
-
-                if (!$results2) {
-                    die('Could not Enter Data' . $this->conn->error);
-                } else {
-                    $_SESSION['email'] = $email;
-                    $_SESSION['success'] = "User registered successfully";
-                    header("Location: ../index.php");
-                }
-            }
+        // Check if the email already exists
+        $emailCheckQuery = "SELECT `email` FROM `tb_user` WHERE `email`='$email'";
+        $emailCheckResults = mysqli_query($conn, $emailCheckQuery);
+        if (mysqli_num_rows($emailCheckResults) > 0) {
+            // Email already exists
+            $_SESSION['status'] = "Email already exists";
+            header("Location: ../register.php"); // Adjust the location as necessary
+            exit();
         } else {
-            $_SESSION['error'] = "Fields cannot be blank";
-            header("Location:../signup.php");
+            // Insert the new user
+            $insertQuery = "INSERT INTO tb_user (name, email, phone, password, status, user_type) VALUES ('$name', '$email', '$phone', '$hashedPassword', 'active', 'user')";
+            $insertResult = mysqli_query($conn, $insertQuery);
+
+            if (!$insertResult) {
+                // Handle insertion error
+                die('Could not enter data: ' . mysqli_error($conn));
+            } else {
+                // Registration successful
+                $_SESSION['email'] = $email; // You can adjust this to any data you wish to keep in the session.
+                header("Location: ../index.php"); // Redirect to a welcome page or anywhere you'd like
+            }
         }
+    } else {
+        // Fields are empty
+        $_SESSION['status'] = "All fields are required.";
+        header("Location: ../register.php"); // Adjust the location as necessary
     }
 }
-
-require('dbdata.php');
-
-if (isset($_POST['submit'])) {
-    $userRegistration = new UserRegistration($conn);
-    $userRegistration->registerUser($_POST['name'], $_POST['email'], $_POST['phone'], $_POST['password']);
-}
- 
+?>

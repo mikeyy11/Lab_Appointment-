@@ -49,7 +49,7 @@ if (isset($_POST['submit'])) {
     if ($conn->query($sql) === TRUE) {
         // Appointment added successfully
         $_SESSION['success'] = "Appointment booked successfully";
-        header("Location: ../appointment.php"); // Redirect to appointment page or any other page
+        header("Location: ../appoinment.php"); // Redirect to appointment page or any other page
         exit(); // Terminate script execution
     } else {
         // Error occurred while adding appointment
